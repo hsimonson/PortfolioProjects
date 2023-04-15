@@ -29,10 +29,10 @@ From [Portfolio Project]..CovidDeaths
 Where location like '%state%' and continent is not null
 order by 1,2
 
--- Looking at total cases vs population in the United States.  Shows percent of population that was infected with Covid.
+-- Looking at total cases vs population.  Shows percent of population that was infected with Covid.
 Select Location, date, total_cases, population, (total_cases/population)*100 as infection_percent
 From [Portfolio Project]..CovidDeaths
-Where location like '%state%' and continent is not null
+Where continent is not null
 order by 1,2
 
 -- Looking at countries with the highest infection rate compared to population
@@ -103,7 +103,7 @@ New_vaccinations numeric,
 Rolling_vaccinations numeric
 )
 
--- Inserting population vs vaccination data into tmep table
+-- Inserting population vs vaccination data into temp table
 Insert into #PercentPopulationVaccinated
 Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
 , SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by dea.location Order by dea.location, dea.date) as rolling_vaccinations
@@ -117,7 +117,7 @@ Select *, (rolling_vaccinations/Population)*100 as percent_vac
 From #PercentPopulationVaccinated
 Order by 2,3
 
---Creating view to store data for visualizations
+--Creating views to store data for visualizations
 USE [Portfolio Project]
 GO
 CREATE View PercentPopulationVaccinated as
@@ -128,4 +128,29 @@ Join [Portfolio Project]..CovidVaccinations vac
 	On dea.location = vac.location
 	and dea.date = vac.date
 where dea.continent is not null
+
+CREATE View PercentGlobalDeaths as
+Select date, SUM(new_cases) as total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(new_cases)*100 as death_percent
+From [Portfolio Project]..CovidDeaths
+where continent is not null
+Group by date
+
+Create View ContinentDeathCount as
+Select continent, MAX(cast(total_deaths as int)) as total_death_count
+From [Portfolio Project]..CovidDeaths
+where continent is not null
+Group by continent
+
+Create View PercentCountryDeaths as
+Select Location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as death_percent
+From [Portfolio Project]..CovidDeaths
+where continent is not null
+
+Create view PercentCountryInfections as
+Select Location, Population, MAX(total_cases) as highest_infection_count, MAX((total_cases/population))*100 as percent_pop_infected
+From [Portfolio Project]..CovidDeaths
+where continent is not null
+Group by location, population
+
+
 
